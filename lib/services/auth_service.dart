@@ -9,11 +9,13 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  /// Register a parent (Dad/Mum) with full credentials.
   Future<UserProfile> signUp({
     required String email,
     required String password,
     required String name,
     required UserRole role,
+    String phoneNumber = '',
   }) async {
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -28,6 +30,26 @@ class AuthService {
       name: name,
       email: email,
       role: role,
+      phoneNumber: phoneNumber,
+    );
+
+    await _firestore.collection('users').doc(user.uid).set(profile.toMap());
+    return profile;
+  }
+
+  /// Sign in a family member anonymously with just a name.
+  /// They get a device-based token so they stay logged in.
+  Future<UserProfile> signUpAnonymous({required String name}) async {
+    final credential = await _auth.signInAnonymously();
+    final user = credential.user!;
+    await user.updateDisplayName(name);
+
+    final profile = UserProfile(
+      uid: user.uid,
+      name: name,
+      email: '',
+      role: UserRole.familyMember,
+      isAnonymous: true,
     );
 
     await _firestore.collection('users').doc(user.uid).set(profile.toMap());

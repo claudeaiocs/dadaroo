@@ -1,4 +1,18 @@
-enum UserRole { dad, familyMember }
+import 'package:dadaroo/config/app_config.dart';
+
+enum UserRole {
+  dad,
+  familyMember;
+
+  String get displayName {
+    switch (this) {
+      case UserRole.dad:
+        return appConfig.parentRole;
+      case UserRole.familyMember:
+        return 'Family Member';
+    }
+  }
+}
 
 class UserProfile {
   final String uid;
@@ -9,6 +23,8 @@ class UserProfile {
   final int totalDeliveries;
   final double averageRating;
   final String? fcmToken;
+  final String phoneNumber;
+  final bool isAnonymous;
 
   UserProfile({
     required this.uid,
@@ -19,6 +35,8 @@ class UserProfile {
     this.totalDeliveries = 0,
     this.averageRating = 0.0,
     this.fcmToken,
+    this.phoneNumber = '',
+    this.isAnonymous = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -31,6 +49,8 @@ class UserProfile {
       'totalDeliveries': totalDeliveries,
       'averageRating': averageRating,
       'fcmToken': fcmToken,
+      'phoneNumber': phoneNumber,
+      'isAnonymous': isAnonymous,
     };
   }
 
@@ -47,6 +67,8 @@ class UserProfile {
       totalDeliveries: map['totalDeliveries'] ?? 0,
       averageRating: (map['averageRating'] ?? 0.0).toDouble(),
       fcmToken: map['fcmToken'],
+      phoneNumber: map['phoneNumber'] ?? '',
+      isAnonymous: map['isAnonymous'] ?? false,
     );
   }
 
@@ -58,6 +80,8 @@ class UserProfile {
     int? totalDeliveries,
     double? averageRating,
     String? fcmToken,
+    String? phoneNumber,
+    bool? isAnonymous,
   }) {
     return UserProfile(
       uid: uid,
@@ -68,6 +92,8 @@ class UserProfile {
       totalDeliveries: totalDeliveries ?? this.totalDeliveries,
       averageRating: averageRating ?? this.averageRating,
       fcmToken: fcmToken ?? this.fcmToken,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
     );
   }
 }

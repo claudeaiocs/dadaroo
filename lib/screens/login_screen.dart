@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/providers/app_provider.dart';
 import 'package:dadaroo/screens/register_screen.dart';
+import 'package:dadaroo/screens/join_family_screen.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -47,11 +49,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String _friendlyError(String error) {
-    if (error.contains('user-not-found')) return 'No account found with this email';
+    if (error.contains('user-not-found')) {
+      return 'No account found with this email';
+    }
     if (error.contains('wrong-password')) return 'Incorrect password';
     if (error.contains('invalid-email')) return 'Invalid email address';
-    if (error.contains('too-many-requests')) return 'Too many attempts. Try again later';
-    if (error.contains('invalid-credential')) return 'Invalid email or password';
+    if (error.contains('too-many-requests')) {
+      return 'Too many attempts. Try again later';
+    }
+    if (error.contains('invalid-credential')) {
+      return 'Invalid email or password';
+    }
     return 'Sign in failed. Please try again.';
   }
 
@@ -72,8 +80,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const RadialGradient(
-                      colors: [Color(0xFFFF8C42), AppTheme.primaryOrange],
+                    gradient: RadialGradient(
+                      colors: [
+                        appConfig.primaryColorLight,
+                        appConfig.primaryColor,
+                      ],
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -88,8 +99,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Dadaroo',
+                Text(
+                  appConfig.appName,
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
@@ -98,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Track the takeaway. Rate your Dad.',
+                  appConfig.tagline,
                   style: TextStyle(
                     fontSize: 16,
                     color: AppTheme.warmBrown.withValues(alpha: 0.8),
@@ -138,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
+                      borderSide: BorderSide(
                         color: AppTheme.primaryOrange,
                         width: 2,
                       ),
@@ -168,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
+                      borderSide: BorderSide(
                         color: AppTheme.primaryOrange,
                         width: 2,
                       ),
@@ -197,17 +208,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Sign In'),
+                        : Text('Sign In as ${appConfig.parentRole}'),
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                // Register link
+                // Register link for parents
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Don't have an account? ",
+                      "New ${appConfig.parentRole}? ",
                       style: TextStyle(color: AppTheme.warmBrown),
                     ),
                     GestureDetector(
@@ -219,8 +230,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         );
                       },
-                      child: const Text(
-                        'Sign Up',
+                      child: Text(
+                        'Create Account',
                         style: TextStyle(
                           color: AppTheme.primaryOrange,
                           fontWeight: FontWeight.bold,
@@ -228,6 +239,66 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // Divider
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'FAMILY MEMBER?',
+                        style: TextStyle(
+                          color: AppTheme.warmBrown,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Join family button (for family members - no account needed)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const JoinFamilyScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.group_add),
+                    label: const Text('Join a Family'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryOrange,
+                      side: BorderSide(color: AppTheme.primaryOrange, width: 2),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No account needed - just a code and your name!',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.warmBrown.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),

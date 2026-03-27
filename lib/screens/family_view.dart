@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/providers/app_provider.dart';
-import 'package:dadaroo/services/dad_jokes.dart';
+import 'package:dadaroo/services/parent_jokes.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 import 'package:dadaroo/widgets/map_widget.dart';
 import 'package:dadaroo/widgets/celebration_widget.dart';
@@ -26,7 +27,7 @@ class FamilyView extends StatelessWidget {
 
   Widget _buildWaitingView() {
     return Scaffold(
-      appBar: AppBar(title: const Text('👨‍👩‍👧‍👦 Family View')),
+      appBar: AppBar(title: Text('${appConfig.familyMemberEmoji} Family View')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -42,8 +43,8 @@ class FamilyView extends StatelessWidget {
                 child: const Text('🍽️', style: TextStyle(fontSize: 64)),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Waiting for Dad...',
+              Text(
+                'Waiting for ${appConfig.parentRole}...',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -52,7 +53,7 @@ class FamilyView extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                "No food run in progress yet.\nTell Dad it's dinner time!",
+                "No food run in progress yet.\nTell ${appConfig.parentRole} it's dinner time!",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -60,7 +61,6 @@ class FamilyView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40),
-              // Dad joke while waiting
               Card(
                 color: AppTheme.lightOrange,
                 child: Padding(
@@ -71,8 +71,8 @@ class FamilyView extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          DadJokes.random,
-                          style: const TextStyle(
+                          ParentJokes.random,
+                          style: TextStyle(
                             fontSize: 14,
                             fontStyle: FontStyle.italic,
                             color: AppTheme.warmBrown,
@@ -98,12 +98,11 @@ class FamilyView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('👨‍👩‍👧‍👦 Dad Tracker'),
+        title: Text('${appConfig.familyMemberEmoji} ${appConfig.parentRole} Tracker'),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // What's coming
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -117,7 +116,7 @@ class FamilyView extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${delivery.dadName} is bringing ${delivery.takeawayDisplayName}!',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.darkBrown,
@@ -127,14 +126,12 @@ class FamilyView extends StatelessWidget {
               ),
             ),
 
-            // Map
             MockMapWidget(
-              dadLocation: provider.currentDadLocation,
+              dadLocation: provider.currentParentLocation,
               homeLocation: provider.gpsService.homeLocation,
               progress: provider.deliveryProgress,
             ),
 
-            // ETA Countdown
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Card(
@@ -147,7 +144,7 @@ class FamilyView extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.timer_outlined,
-                            color: provider.dadIsClose
+                            color: provider.parentIsClose
                                 ? AppTheme.successGreen
                                 : AppTheme.primaryOrange,
                             size: 32,
@@ -158,7 +155,7 @@ class FamilyView extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 42,
                               fontWeight: FontWeight.w900,
-                              color: provider.dadIsClose
+                              color: provider.parentIsClose
                                   ? AppTheme.successGreen
                                   : AppTheme.primaryOrange,
                             ),
@@ -166,11 +163,11 @@ class FamilyView extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      if (provider.dadIsClose)
-                        _DadCloseAlert()
+                      if (provider.parentIsClose)
+                        _ParentCloseAlert()
                       else
                         Text(
-                          'Dad is on the way! 🚗',
+                          '${appConfig.parentRole} is on the way! 🚗',
                           style: TextStyle(
                             fontSize: 16,
                             color: AppTheme.warmBrown.withValues(alpha: 0.8),
@@ -202,10 +199,9 @@ class FamilyView extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () {
                     provider.skipRating();
-                    // User should tap the Rate Dad tab
                   },
                   icon: const Icon(Icons.star),
-                  label: const Text('Rate Your Dad!'),
+                  label: Text('Rate Your ${appConfig.parentRole}!'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
@@ -216,7 +212,7 @@ class FamilyView extends StatelessWidget {
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () => provider.skipRating(),
-                  child: const Text(
+                  child: Text(
                     'Skip Rating',
                     style: TextStyle(color: AppTheme.warmBrown),
                   ),
@@ -230,12 +226,12 @@ class FamilyView extends StatelessWidget {
   }
 }
 
-class _DadCloseAlert extends StatefulWidget {
+class _ParentCloseAlert extends StatefulWidget {
   @override
-  State<_DadCloseAlert> createState() => _DadCloseAlertState();
+  State<_ParentCloseAlert> createState() => _ParentCloseAlertState();
 }
 
-class _DadCloseAlertState extends State<_DadCloseAlert>
+class _ParentCloseAlertState extends State<_ParentCloseAlert>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -279,9 +275,9 @@ class _DadCloseAlertState extends State<_DadCloseAlert>
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'DAD IS ALMOST HOME!',
-                style: TextStyle(
+              Text(
+                '${appConfig.parentRole.toUpperCase()} IS ALMOST HOME!',
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.successGreen,

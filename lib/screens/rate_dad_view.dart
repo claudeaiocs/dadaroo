@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/models/rating.dart';
 import 'package:dadaroo/providers/app_provider.dart';
 import 'package:dadaroo/theme/app_theme.dart';
@@ -24,7 +25,7 @@ class _RateDadViewState extends State<RateDadView> {
     final provider = context.watch<AppProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('⭐ Rate Your Dad')),
+      appBar: AppBar(title: Text('⭐ ${appConfig.rateParentLabel}')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -45,7 +46,6 @@ class _RateDadViewState extends State<RateDadView> {
     final delivery = provider.activeDelivery!;
     return Column(
       children: [
-        // Header
         Text(
           delivery.takeawayEmoji,
           style: const TextStyle(fontSize: 60),
@@ -53,7 +53,7 @@ class _RateDadViewState extends State<RateDadView> {
         const SizedBox(height: 8),
         Text(
           'How did ${delivery.dadName} do?',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: AppTheme.darkBrown,
@@ -68,7 +68,6 @@ class _RateDadViewState extends State<RateDadView> {
         ),
         const SizedBox(height: 32),
 
-        // Rating categories
         _buildRatingCategory(
           '⚡ Speed',
           'How fast was the delivery?',
@@ -83,20 +82,19 @@ class _RateDadViewState extends State<RateDadView> {
         ),
         _buildRatingCategory(
           '📱 Communication',
-          'Did Dad keep you updated?',
+          'Did ${appConfig.parentRole} keep you updated?',
           _communication,
           (v) => setState(() => _communication = v),
         ),
         _buildRatingCategory(
-          '👨 Overall Dadness',
-          'The complete Dad experience',
+          '${appConfig.parentEmoji} ${appConfig.overallRatingLabel}',
+          'The complete ${appConfig.parentRole} experience',
           _overallDadness,
           (v) => setState(() => _overallDadness = v),
         ),
 
         const SizedBox(height: 24),
 
-        // Overall average display
         if (_speed > 0 && _foodChoice > 0 && _communication > 0 && _overallDadness > 0)
           Card(
             color: AppTheme.lightOrange,
@@ -105,7 +103,7 @@ class _RateDadViewState extends State<RateDadView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Overall: ',
                     style: TextStyle(
                       fontSize: 18,
@@ -121,7 +119,7 @@ class _RateDadViewState extends State<RateDadView> {
                   Text(
                     ((_speed + _foodChoice + _communication + _overallDadness) / 4)
                         .toStringAsFixed(1),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryOrange,
@@ -134,7 +132,6 @@ class _RateDadViewState extends State<RateDadView> {
 
         const SizedBox(height: 24),
 
-        // Submit button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -161,7 +158,7 @@ class _RateDadViewState extends State<RateDadView> {
         const SizedBox(height: 12),
         TextButton(
           onPressed: () => provider.skipRating(),
-          child: const Text(
+          child: Text(
             'Skip',
             style: TextStyle(color: AppTheme.warmBrown),
           ),
@@ -184,7 +181,7 @@ class _RateDadViewState extends State<RateDadView> {
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.darkBrown,
@@ -218,7 +215,7 @@ class _RateDadViewState extends State<RateDadView> {
         const SizedBox(height: 60),
         const Text('🎉', style: TextStyle(fontSize: 80)),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Thanks for rating!',
           style: TextStyle(
             fontSize: 28,
@@ -228,7 +225,7 @@ class _RateDadViewState extends State<RateDadView> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Dad appreciates the feedback!',
+          '${appConfig.parentRole} appreciates the feedback!',
           style: TextStyle(
             fontSize: 16,
             color: AppTheme.warmBrown.withValues(alpha: 0.8),
@@ -256,26 +253,24 @@ class _RateDadViewState extends State<RateDadView> {
       children: [
         const SizedBox(height: 40),
 
-        // Badges section
         const Text(
           '🏆 Badges & Achievements',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: AppTheme.darkBrown,
           ),
         ),
         const SizedBox(height: 16),
 
-        if (provider.currentDad.badges.isEmpty)
+        if (provider.currentParent.badges.isEmpty)
           Card(
             color: AppTheme.lightOrange,
-            child: const Padding(
-              padding: EdgeInsets.all(24),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Text('🎯', style: TextStyle(fontSize: 40)),
-                  SizedBox(height: 8),
+                  const Text('🎯', style: TextStyle(fontSize: 40)),
+                  const SizedBox(height: 8),
                   Text(
                     'No badges yet!',
                     style: TextStyle(
@@ -293,7 +288,7 @@ class _RateDadViewState extends State<RateDadView> {
             ),
           )
         else
-          ...provider.currentDad.badges.map((badge) => Card(
+          ...provider.currentParent.badges.map((badge) => Card(
                 child: ListTile(
                   leading: Text(
                     badge.type.icon,
@@ -301,7 +296,7 @@ class _RateDadViewState extends State<RateDadView> {
                   ),
                   title: Text(
                     badge.type.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.darkBrown,
                     ),
@@ -316,9 +311,8 @@ class _RateDadViewState extends State<RateDadView> {
 
         const SizedBox(height: 32),
 
-        // Leaderboard
-        const Text(
-          '🏅 Dad Leaderboard',
+        Text(
+          '🏅 ${appConfig.leaderboardLabel}',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -327,13 +321,13 @@ class _RateDadViewState extends State<RateDadView> {
         ),
         const SizedBox(height: 16),
 
-        ...(provider.dads.toList()
+        ...(provider.parents.toList()
               ..sort((a, b) => b.averageRating.compareTo(a.averageRating)))
             .asMap()
             .entries
             .map((entry) {
           final index = entry.key;
-          final dad = entry.value;
+          final parent = entry.value;
           final medals = ['🥇', '🥈', '🥉'];
           return Card(
             color: index == 0 ? AppTheme.lightOrange : null,
@@ -346,14 +340,14 @@ class _RateDadViewState extends State<RateDadView> {
                 ),
               ),
               title: Text(
-                dad.name,
-                style: const TextStyle(
+                parent.name,
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.darkBrown,
                 ),
               ),
               subtitle: Text(
-                '${dad.totalDeliveries} deliveries | ${dad.badges.length} badges',
+                '${parent.totalDeliveries} deliveries | ${parent.badges.length} badges',
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -361,10 +355,10 @@ class _RateDadViewState extends State<RateDadView> {
                   const Icon(Icons.star, color: AppTheme.starGold, size: 20),
                   const SizedBox(width: 4),
                   Text(
-                    dad.averageRating > 0
-                        ? dad.averageRating.toStringAsFixed(1)
+                    parent.averageRating > 0
+                        ? parent.averageRating.toStringAsFixed(1)
                         : '-',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryOrange,
@@ -378,7 +372,7 @@ class _RateDadViewState extends State<RateDadView> {
 
         const SizedBox(height: 16),
         Text(
-          'No active delivery to rate.\nStart a food run from the Dad tab!',
+          'No active delivery to rate.\nStart a food run from the ${appConfig.parentRole} tab!',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,

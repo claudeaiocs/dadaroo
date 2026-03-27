@@ -43,8 +43,6 @@ class NotificationService {
 
   void _handleForegroundMessage(RemoteMessage message) {
     // Foreground messages can be shown as in-app notifications.
-    // The actual display logic would use a snackbar or overlay in the UI.
-    // This is a hook for the provider to listen to.
   }
 
   /// Subscribe to a family group topic for group notifications.
@@ -58,8 +56,6 @@ class NotificationService {
   }
 
   /// Send a notification to all family members via Firestore trigger.
-  /// The actual sending happens via a Cloud Function that watches this collection.
-  /// This method writes a notification request to Firestore.
   Future<void> sendFamilyNotification({
     required String familyGroupId,
     required String title,
@@ -78,45 +74,44 @@ class NotificationService {
     });
   }
 
-  /// Notify family that Dad started a delivery.
+  /// Notify family that parent started a delivery.
   Future<void> notifyDeliveryStarted({
     required String familyGroupId,
-    required String dadName,
+    required String parentName,
     required String takeawayName,
   }) async {
     await sendFamilyNotification(
       familyGroupId: familyGroupId,
-      title: '$dadName has the food!',
-      body: '$dadName is bringing $takeawayName home!',
+      title: '$parentName has the food!',
+      body: '$parentName is bringing $takeawayName home!',
       type: 'delivery_started',
     );
   }
 
-  /// Notify family that Dad is close.
-  Future<void> notifyDadIsClose({
+  /// Notify family that parent is close.
+  Future<void> notifyParentIsClose({
     required String familyGroupId,
-    required String dadName,
+    required String parentName,
   }) async {
     await sendFamilyNotification(
       familyGroupId: familyGroupId,
-      title: '$dadName is almost home!',
+      title: '$parentName is almost home!',
       body: 'Get the plates ready - less than 2 minutes away!',
-      type: 'dad_close',
+      type: 'parent_close',
     );
   }
 
-  /// Notify Dad that a rating came in.
+  /// Notify parent that a rating came in.
   Future<void> notifyRatingReceived({
-    required String dadUid,
+    required String parentUid,
     required double averageRating,
   }) async {
-    final doc = await _firestore.collection('users').doc(dadUid).get();
+    final doc = await _firestore.collection('users').doc(parentUid).get();
     final token = doc.data()?['fcmToken'];
     if (token == null) return;
 
-    // Write notification request targeting specific user
     await _firestore.collection('notificationRequests').add({
-      'targetUid': dadUid,
+      'targetUid': parentUid,
       'title': 'New Rating!',
       'body': 'You got ${averageRating.toStringAsFixed(1)} stars!',
       'type': 'rating_received',

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/models/takeaway_type.dart';
 import 'package:dadaroo/providers/app_provider.dart';
+import 'package:dadaroo/screens/delivery_setup_screen.dart';
 import 'package:dadaroo/screens/profile_screen.dart';
-import 'package:dadaroo/services/dad_jokes.dart';
+import 'package:dadaroo/services/parent_jokes.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 
 class DadView extends StatefulWidget {
@@ -41,24 +43,24 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
       return _buildActiveDeliveryView(provider);
     }
 
-    final userName = provider.userProfile?.name ?? provider.currentDad.name;
+    final userName = provider.userProfile?.name ?? provider.currentParent.name;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🚗 Dadaroo'),
+        title: Text('🚗 ${appConfig.appName}'),
         actions: [
-          if (provider.dads.length > 1)
+          if (provider.parents.length > 1)
             PopupMenuButton<String>(
               icon: const Icon(Icons.swap_horiz),
-              tooltip: 'Switch Dad',
-              onSelected: (dadId) => provider.setCurrentDad(dadId),
-              itemBuilder: (_) => provider.dads
+              tooltip: 'Switch ${appConfig.parentRole}',
+              onSelected: (parentId) => provider.setCurrentParent(parentId),
+              itemBuilder: (_) => provider.parents
                   .map((d) => PopupMenuItem(
                         value: d.id,
                         child: Row(
                           children: [
                             Icon(
-                              d.id == provider.currentDad.id
+                              d.id == provider.currentParent.id
                                   ? Icons.check_circle
                                   : Icons.circle_outlined,
                               color: AppTheme.primaryOrange,
@@ -87,10 +89,9 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            // Dad greeting
             Text(
               'Hey $userName! 👋',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.darkBrown,
@@ -113,10 +114,10 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(Icons.restaurant, color: AppTheme.primaryOrange),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           "What's for dinner?",
                           style: TextStyle(
@@ -150,7 +151,6 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                           .toList(),
                     ),
                     const SizedBox(height: 12),
-                    // Custom option
                     Row(
                       children: [
                         ChoiceChip(
@@ -182,7 +182,7 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
+                                  borderSide: BorderSide(
                                     color: AppTheme.primaryOrange,
                                   ),
                                 ),
@@ -211,18 +211,22 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
               },
               child: GestureDetector(
                 onTap: () {
-                  provider.startDelivery();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DeliverySetupScreen()),
+                  );
                 },
                 child: Container(
                   width: 220,
                   height: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const RadialGradient(
+                    gradient: RadialGradient(
                       colors: [
-                        Color(0xFFFF8C42),
-                        AppTheme.primaryOrange,
-                        Color(0xFFD4600A),
+                        appConfig.primaryColorLight,
+                        appConfig.primaryColor,
+                        appConfig.primaryColorDark,
                       ],
                     ),
                     boxShadow: [
@@ -253,7 +257,7 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
             ),
             const SizedBox(height: 32),
 
-            // Dad joke
+            // Joke
             Card(
               color: AppTheme.lightOrange,
               child: Padding(
@@ -264,7 +268,7 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        DadJokes.random,
+                        ParentJokes.random,
                         style: TextStyle(
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
@@ -283,13 +287,16 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildActiveDeliveryView(AppProvider provider) {
+    final delivery = provider.activeDelivery!;
     final eta = provider.etaRemaining;
     final minutes = eta.inMinutes;
     final seconds = eta.inSeconds % 60;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🚗 On My Way!'),
+        title: Text(delivery.isMultiDrop
+            ? '🚗 Stop ${delivery.currentStopIndex + 1} of ${delivery.totalStops}'
+            : '🚗 On My Way!'),
         actions: [
           TextButton.icon(
             onPressed: () => provider.simulateArrival(),
@@ -309,20 +316,19 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                 child: Column(
                   children: [
                     Text(
-                      provider.activeDelivery!.takeawayEmoji,
+                      delivery.takeawayEmoji,
                       style: const TextStyle(fontSize: 60),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Bringing ${provider.activeDelivery!.takeawayDisplayName}',
-                      style: const TextStyle(
+                      'Bringing ${delivery.takeawayDisplayName}',
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.darkBrown,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // ETA
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
@@ -335,12 +341,11 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.timer,
-                              color: AppTheme.primaryOrange),
+                          Icon(Icons.timer, color: AppTheme.primaryOrange),
                           const SizedBox(width: 8),
                           Text(
                             'ETA: ${minutes}m ${seconds.toString().padLeft(2, '0')}s',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.primaryOrange,
@@ -350,14 +355,13 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Progress bar
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
                         value: provider.deliveryProgress,
                         backgroundColor: AppTheme.lightOrange,
-                        valueColor: const AlwaysStoppedAnimation(
-                            AppTheme.primaryOrange),
+                        valueColor:
+                            AlwaysStoppedAnimation(AppTheme.primaryOrange),
                         minHeight: 12,
                       ),
                     ),
@@ -372,11 +376,89 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
                 ),
               ),
             ),
+
+            // Multi-drop stop tracker
+            if (delivery.isMultiDrop) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.route, color: AppTheme.primaryOrange),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Delivery Stops',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.darkBrown,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${delivery.completedStops}/${delivery.totalStops}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primaryOrange,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: delivery.stopsProgress,
+                          backgroundColor: AppTheme.lightOrange,
+                          valueColor:
+                              AlwaysStoppedAnimation(AppTheme.successGreen),
+                          minHeight: 6,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...delivery.stops.map((stop) => _buildStopRow(
+                            stop,
+                            isCurrent:
+                                stop.orderIndex == delivery.currentStopIndex,
+                          )),
+                    ],
+                  ),
+                ),
+              ),
+              if (delivery.currentStop != null &&
+                  !delivery.currentStop!.isDelivered)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: ElevatedButton.icon(
+                    onPressed: () => provider.markCurrentStopDelivered(),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(
+                        'Delivered to ${delivery.currentStop!.name}'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.successGreen,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+
             const Spacer(),
-            // Cancel button
             TextButton(
               onPressed: () => provider.cancelDelivery(),
-              child: const Text(
+              child: Text(
                 'Cancel Delivery',
                 style: TextStyle(color: AppTheme.warmBrown),
               ),
@@ -384,6 +466,83 @@ class _DadViewState extends State<DadView> with SingleTickerProviderStateMixin {
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStopRow(dynamic stop, {required bool isCurrent}) {
+    final IconData icon;
+    final Color color;
+    if (stop.isDelivered) {
+      icon = Icons.check_circle;
+      color = AppTheme.successGreen;
+    } else if (isCurrent) {
+      icon = Icons.radio_button_checked;
+      color = AppTheme.primaryOrange;
+    } else {
+      icon = Icons.radio_button_unchecked;
+      color = AppTheme.warmBrown.withValues(alpha: 0.4);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stop.name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                    color: stop.isDelivered
+                        ? AppTheme.warmBrown.withValues(alpha: 0.5)
+                        : AppTheme.darkBrown,
+                    decoration: stop.isDelivered
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+                if (stop.recipientName != null)
+                  Text(
+                    'For: ${stop.recipientName}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.warmBrown.withValues(alpha: 0.6),
+                    ),
+                  ),
+                if (stop.items.isNotEmpty)
+                  Text(
+                    stop.items.join(', '),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.warmBrown.withValues(alpha: 0.6),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (isCurrent && !stop.isDelivered)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryOrange.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'NOW',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryOrange,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

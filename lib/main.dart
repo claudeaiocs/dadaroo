@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/firebase_options.dart';
 import 'package:dadaroo/providers/app_provider.dart';
 import 'package:dadaroo/screens/login_screen.dart';
@@ -28,7 +29,7 @@ class DadarooApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: MaterialApp(
-        title: 'Dadaroo',
+        title: appConfig.appName,
         theme: AppTheme.theme,
         debugShowCheckedModeBanner: false,
         home: const AuthGate(),
@@ -47,22 +48,22 @@ class AuthGate extends StatelessWidget {
 
     // Still initializing Firebase Auth
     if (provider.isAuthLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🚗', style: TextStyle(fontSize: 64)),
-              SizedBox(height: 16),
+              const Text('🚗', style: TextStyle(fontSize: 64)),
+              const SizedBox(height: 16),
               Text(
-                'Dadaroo',
+                appConfig.appName,
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   color: AppTheme.darkBrown,
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               CircularProgressIndicator(color: AppTheme.primaryOrange),
             ],
           ),
@@ -114,26 +115,26 @@ class _MainShellState extends State<MainShell> {
         onDestinationSelected: (index) {
           setState(() => _currentIndex = index);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.directions_car_outlined),
+            icon: const Icon(Icons.directions_car_outlined),
             selectedIcon:
                 Icon(Icons.directions_car, color: AppTheme.primaryOrange),
-            label: 'Dad',
+            label: appConfig.parentRole,
           ),
           NavigationDestination(
-            icon: Icon(Icons.family_restroom_outlined),
+            icon: const Icon(Icons.family_restroom_outlined),
             selectedIcon:
                 Icon(Icons.family_restroom, color: AppTheme.primaryOrange),
             label: 'Family',
           ),
           NavigationDestination(
-            icon: Icon(Icons.star_outline),
+            icon: const Icon(Icons.star_outline),
             selectedIcon: Icon(Icons.star, color: AppTheme.primaryOrange),
-            label: 'Rate Dad',
+            label: 'Rate ${appConfig.parentRole}',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
+            icon: const Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history, color: AppTheme.primaryOrange),
             label: 'History',
           ),

@@ -1,12 +1,14 @@
+import 'package:dadaroo/config/app_config.dart';
+
 enum BadgeType {
   speedDemon,
   masterChefPicker,
   hundredDeliveries,
   nightOwl,
   weekendWarrior,
-  consistentDad,
-  fiveStarDad,
-  varietyKing;
+  consistentParent,
+  fiveStarParent,
+  varietyRoyalty;
 
   String get title {
     switch (this) {
@@ -20,12 +22,12 @@ enum BadgeType {
         return 'Night Owl';
       case BadgeType.weekendWarrior:
         return 'Weekend Warrior';
-      case BadgeType.consistentDad:
-        return 'Consistent Dad';
-      case BadgeType.fiveStarDad:
-        return '5-Star Dad';
-      case BadgeType.varietyKing:
-        return 'Variety King';
+      case BadgeType.consistentParent:
+        return appConfig.consistentBadgeTitle;
+      case BadgeType.fiveStarParent:
+        return appConfig.fiveStarBadgeTitle;
+      case BadgeType.varietyRoyalty:
+        return appConfig.varietyBadgeTitle;
     }
   }
 
@@ -41,11 +43,11 @@ enum BadgeType {
         return 'Late night food hero';
       case BadgeType.weekendWarrior:
         return '10 weekend deliveries';
-      case BadgeType.consistentDad:
+      case BadgeType.consistentParent:
         return '30-day delivery streak';
-      case BadgeType.fiveStarDad:
+      case BadgeType.fiveStarParent:
         return 'Received a perfect 5-star rating';
-      case BadgeType.varietyKing:
+      case BadgeType.varietyRoyalty:
         return 'Tried every takeaway type';
     }
   }
@@ -62,12 +64,43 @@ enum BadgeType {
         return '🦉';
       case BadgeType.weekendWarrior:
         return '🏆';
-      case BadgeType.consistentDad:
+      case BadgeType.consistentParent:
         return '📅';
-      case BadgeType.fiveStarDad:
+      case BadgeType.fiveStarParent:
         return '⭐';
-      case BadgeType.varietyKing:
+      case BadgeType.varietyRoyalty:
         return '👑';
+    }
+  }
+
+  /// Firestore storage name - maps new enum names to legacy stored values
+  String get storageName {
+    switch (this) {
+      case BadgeType.consistentParent:
+        return 'consistentDad';
+      case BadgeType.fiveStarParent:
+        return 'fiveStarDad';
+      case BadgeType.varietyRoyalty:
+        return 'varietyKing';
+      default:
+        return name;
+    }
+  }
+
+  static BadgeType fromStorageName(String name) {
+    // Handle legacy names from Firestore
+    switch (name) {
+      case 'consistentDad':
+        return BadgeType.consistentParent;
+      case 'fiveStarDad':
+        return BadgeType.fiveStarParent;
+      case 'varietyKing':
+        return BadgeType.varietyRoyalty;
+      default:
+        return BadgeType.values.firstWhere(
+          (b) => b.name == name || b.storageName == name,
+          orElse: () => BadgeType.speedDemon,
+        );
     }
   }
 }
@@ -80,17 +113,14 @@ class Badge {
 
   Map<String, dynamic> toMap() {
     return {
-      'type': type.name,
+      'type': type.storageName,
       'earnedAt': earnedAt.toIso8601String(),
     };
   }
 
   factory Badge.fromMap(Map<String, dynamic> map) {
     return Badge(
-      type: BadgeType.values.firstWhere(
-        (b) => b.name == map['type'],
-        orElse: () => BadgeType.speedDemon,
-      ),
+      type: BadgeType.fromStorageName(map['type'] ?? 'speedDemon'),
       earnedAt: map['earnedAt'] != null
           ? DateTime.parse(map['earnedAt'])
           : DateTime.now(),

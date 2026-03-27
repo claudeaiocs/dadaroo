@@ -4,7 +4,7 @@ class FamilyGroup {
   final String inviteCode;
   final String createdBy;
   final List<String> memberIds;
-  final List<String> dadIds;
+  final List<String> parentIds;
   final DateTime createdAt;
 
   FamilyGroup({
@@ -13,7 +13,7 @@ class FamilyGroup {
     required this.inviteCode,
     required this.createdBy,
     required this.memberIds,
-    required this.dadIds,
+    required this.parentIds,
     required this.createdAt,
   });
 
@@ -24,7 +24,8 @@ class FamilyGroup {
       'inviteCode': inviteCode,
       'createdBy': createdBy,
       'memberIds': memberIds,
-      'dadIds': dadIds,
+      // Keep Firestore field as 'dadIds' for backward compatibility
+      'dadIds': parentIds,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -36,7 +37,8 @@ class FamilyGroup {
       inviteCode: map['inviteCode'] ?? '',
       createdBy: map['createdBy'] ?? '',
       memberIds: List<String>.from(map['memberIds'] ?? []),
-      dadIds: List<String>.from(map['dadIds'] ?? []),
+      // Read from Firestore field 'dadIds'
+      parentIds: List<String>.from(map['dadIds'] ?? []),
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'])
           : DateTime.now(),

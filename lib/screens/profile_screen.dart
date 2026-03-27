@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/models/user_profile.dart';
 import 'package:dadaroo/providers/app_provider.dart';
+import 'package:dadaroo/screens/family_members_screen.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -19,6 +21,8 @@ class ProfileScreen extends StatelessWidget {
         body: Center(child: CircularProgressIndicator()),
       );
     }
+
+    final isGroupOwner = profile.uid == familyGroup?.createdBy;
 
     return Scaffold(
       appBar: AppBar(
@@ -41,13 +45,15 @@ class ProfileScreen extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [Color(0xFFFF8C42), AppTheme.primaryOrange],
+                gradient: RadialGradient(
+                  colors: [appConfig.primaryColorLight, appConfig.primaryColor],
                 ),
               ),
               child: Center(
                 child: Text(
-                  profile.role == UserRole.dad ? '👨' : '👨‍👩‍👧‍👦',
+                  profile.role == UserRole.dad
+                      ? appConfig.parentEmoji
+                      : appConfig.familyMemberEmoji,
                   style: const TextStyle(fontSize: 44),
                 ),
               ),
@@ -55,7 +61,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               profile.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.darkBrown,
@@ -69,20 +75,30 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                profile.role == UserRole.dad ? 'Dad' : 'Family Member',
-                style: const TextStyle(
+                profile.role.displayName,
+                style: TextStyle(
                   color: AppTheme.primaryOrange,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              profile.email,
-              style: TextStyle(
-                color: AppTheme.warmBrown.withValues(alpha: 0.7),
+            if (profile.email.isNotEmpty)
+              Text(
+                profile.email,
+                style: TextStyle(
+                  color: AppTheme.warmBrown.withValues(alpha: 0.7),
+                ),
               ),
-            ),
+            if (profile.phoneNumber.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                profile.phoneNumber,
+                style: TextStyle(
+                  color: AppTheme.warmBrown.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
 
             // Stats cards
@@ -117,10 +133,10 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
                           Icon(Icons.home, color: AppTheme.primaryOrange),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
                             'Family Group',
                             style: TextStyle(
@@ -134,7 +150,7 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         familyGroup.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.primaryOrange,
@@ -143,25 +159,25 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.people, size: 16, color: AppTheme.warmBrown),
+                          Icon(Icons.people,
+                              size: 16, color: AppTheme.warmBrown),
                           const SizedBox(width: 4),
                           Text(
                             '${familyGroup.memberIds.length} members',
-                            style: const TextStyle(color: AppTheme.warmBrown),
+                            style: TextStyle(color: AppTheme.warmBrown),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      // Invite code
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'Invite Code: ',
                             style: TextStyle(color: AppTheme.warmBrown),
                           ),
                           Text(
                             familyGroup.inviteCode,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 4,
@@ -181,6 +197,33 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+
+                      // Manage members button (for parent/owner)
+                      if (isGroupOwner) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const FamilyMembersScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.group),
+                            label: const Text('Manage Family Members'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryOrange,
+                              side: BorderSide(color: AppTheme.primaryOrange),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -238,7 +281,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryOrange,

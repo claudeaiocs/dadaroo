@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 
 class CelebrationWidget extends StatefulWidget {
@@ -84,7 +85,7 @@ class _CelebrationWidgetState extends State<CelebrationWidget>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'DAD\'S HOME!',
+                          appConfig.arrivalShout,
                           style: TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.w900,
@@ -99,7 +100,7 @@ class _CelebrationWidgetState extends State<CelebrationWidget>
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           '🍕 Food has arrived! 🍕',
                           style: TextStyle(
                             fontSize: 22,
@@ -127,14 +128,14 @@ class _Confetti {
   late double wobbleAmp;
   late double rotationSpeed;
 
-  static const _colors = [
+  static final _colors = [
     AppTheme.primaryOrange,
     AppTheme.accentYellow,
     AppTheme.starGold,
     AppTheme.warmBrown,
     AppTheme.successGreen,
-    Color(0xFFFF6B6B),
-    Color(0xFF4ECDC4),
+    const Color(0xFFFF6B6B),
+    const Color(0xFF4ECDC4),
   ];
 
   _Confetti(Random random) {

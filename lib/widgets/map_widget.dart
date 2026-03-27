@@ -72,8 +72,7 @@ class MockMapWidget extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'HOME',
+                    child: Text('HOME',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -136,7 +135,7 @@ class MockMapWidget extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       backgroundColor: Colors.white.withValues(alpha: 0.5),
-                      valueColor: const AlwaysStoppedAnimation(AppTheme.primaryOrange),
+                      valueColor: AlwaysStoppedAnimation(AppTheme.primaryOrange),
                       minHeight: 6,
                     ),
                   ),
@@ -266,3 +265,4 @@ class _RoutePainter extends CustomPainter {
   @override
   bool shouldRepaint(_RoutePainter oldDelegate) => oldDelegate.progress != progress;
 }
+

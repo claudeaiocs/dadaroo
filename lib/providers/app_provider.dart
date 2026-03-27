@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/models/takeaway_type.dart';
 import 'package:dadaroo/models/delivery.dart';
+import 'package:dadaroo/models/delivery_stop.dart';
 import 'package:dadaroo/models/rating.dart';
 import 'package:dadaroo/models/badge.dart';
-import 'package:dadaroo/models/dad.dart';
+import 'package:dadaroo/models/parent_profile.dart';
 import 'package:dadaroo/models/user_profile.dart';
 import 'package:dadaroo/models/family_group.dart';
 import 'package:dadaroo/services/auth_service.dart';
@@ -31,14 +33,14 @@ class AppProvider extends ChangeNotifier {
   TakeawayType _selectedTakeaway = TakeawayType.pizza;
   String _customTakeawayName = '';
   Delivery? _activeDelivery;
-  LatLng? _currentDadLocation;
-  bool _dadIsClose = false;
+  LatLng? _currentParentLocation;
+  bool _parentIsClose = false;
   bool _showCelebration = false;
   bool _notifiedClose = false;
 
   // Family data
-  List<Dad> _dads = [];
-  String _currentDadId = '';
+  List<ParentProfile> _parents = [];
+  String _currentParentId = '';
   List<Delivery> _deliveryHistory = [];
 
   // Stream subscriptions
@@ -65,31 +67,34 @@ class AppProvider extends ChangeNotifier {
   TakeawayType get selectedTakeaway => _selectedTakeaway;
   String get customTakeawayName => _customTakeawayName;
   Delivery? get activeDelivery => _activeDelivery;
-  LatLng? get currentDadLocation => _currentDadLocation;
-  bool get dadIsClose => _dadIsClose;
+  LatLng? get currentParentLocation => _currentParentLocation;
+  bool get parentIsClose => _parentIsClose;
   bool get showCelebration => _showCelebration;
   bool get isDeliveryActive =>
       _activeDelivery != null && _activeDelivery!.isActive;
   List<Delivery> get deliveryHistory => List.unmodifiable(_deliveryHistory);
-  List<Dad> get dads => List.unmodifiable(_dads);
-  Dad get currentDad {
-    if (_dads.isEmpty) {
-      return Dad(id: '', name: _userProfile?.name ?? 'Dad', badges: [], deliveries: []);
+  List<ParentProfile> get parents => List.unmodifiable(_parents);
+  ParentProfile get currentParent {
+    if (_parents.isEmpty) {
+      return ParentProfile(
+        id: '',
+        name: _userProfile?.name ?? appConfig.parentRole,
+        badges: [],
+        deliveries: [],
+      );
     }
-    return _dads.firstWhere(
-      (d) => d.id == _currentDadId,
-      orElse: () => _dads.first,
+    return _parents.firstWhere(
+      (d) => d.id == _currentParentId,
+      orElse: () => _parents.first,
     );
   }
 
   MockGpsService get gpsService => _mockGpsService;
 
   Duration get etaRemaining {
-    // If we have real GPS data from Firestore, calculate real ETA
     if (_activeDelivery != null &&
         _activeDelivery!.currentLatitude != null &&
         _activeDelivery!.currentLongitude != null) {
-      // TODO: Use actual home coordinates from family group settings
       return GpsTrackingService.calculateEtaFromPosition(
         latitude: _activeDelivery!.currentLatitude!,
         longitude: _activeDelivery!.currentLongitude!,
@@ -97,14 +102,12 @@ class AppProvider extends ChangeNotifier {
         homeLongitude: -0.1100,
       );
     }
-    // Fallback to mock GPS
     return _mockGpsService.estimatedTimeRemaining;
   }
 
   double get deliveryProgress {
     if (_activeDelivery != null &&
         _activeDelivery!.currentLatitude != null) {
-      // Calculate progress based on distance
       final totalDistance = GpsTrackingService.distanceBetween(
         51.5074, -0.1278, 51.5150, -0.1100,
       );
@@ -142,7 +145,7 @@ class AppProvider extends ChangeNotifier {
         _loadFamilyGroup(profile!.familyGroupId!);
       }
       if (profile != null) {
-        _currentDadId = profile.uid;
+        _currentParentId = profile.uid;
       }
       notifyListeners();
     });
@@ -154,7 +157,7 @@ class AppProvider extends ChangeNotifier {
         _firestoreService.familyGroupStream(groupId).listen((group) async {
       _familyGroup = group;
       if (group != null) {
-        await _loadFamilyDads(group);
+        await _loadFamilyParents(group);
         _listenToActiveDelivery(group.id);
         _listenToHistory(group.id);
       }
@@ -162,24 +165,24 @@ class AppProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> _loadFamilyDads(FamilyGroup group) async {
-    final members = await _firestoreService.getFamilyMembers(group.dadIds);
-    final dadList = <Dad>[];
+  Future<void> _loadFamilyParents(FamilyGroup group) async {
+    final members = await _firestoreService.getFamilyMembers(group.parentIds);
+    final parentList = <ParentProfile>[];
     for (final member in members) {
       final badges = await _firestoreService.getUserBadges(member.uid);
       final deliveries = _deliveryHistory
           .where((d) => d.dadUid == member.uid)
           .toList();
-      dadList.add(Dad(
+      parentList.add(ParentProfile(
         id: member.uid,
         name: member.name,
         badges: badges,
         deliveries: deliveries,
       ));
     }
-    _dads = dadList;
-    if (_dads.isNotEmpty && !_dads.any((d) => d.id == _currentDadId)) {
-      _currentDadId = _dads.first.id;
+    _parents = parentList;
+    if (_parents.isNotEmpty && !_parents.any((d) => d.id == _currentParentId)) {
+      _currentParentId = _parents.first.id;
     }
   }
 
@@ -191,29 +194,26 @@ class AppProvider extends ChangeNotifier {
       _activeDelivery = delivery;
 
       if (delivery != null) {
-        // Update dad location from Firestore
         if (delivery.currentLatitude != null &&
             delivery.currentLongitude != null) {
-          _currentDadLocation = LatLng(
+          _currentParentLocation = LatLng(
             delivery.currentLatitude!,
             delivery.currentLongitude!,
           );
 
-          // Check if close
           final eta = etaRemaining;
-          if (eta.inSeconds <= 120 && !_dadIsClose) {
-            _dadIsClose = true;
+          if (eta.inSeconds <= 120 && !_parentIsClose) {
+            _parentIsClose = true;
             if (!_notifiedClose && _familyGroup != null) {
               _notifiedClose = true;
-              _notificationService.notifyDadIsClose(
+              _notificationService.notifyParentIsClose(
                 familyGroupId: _familyGroup!.id,
-                dadName: delivery.dadName,
+                parentName: delivery.dadName,
               );
             }
           }
         }
       } else if (wasActive) {
-        // Delivery just completed
         _showCelebration = true;
       }
 
@@ -226,9 +226,8 @@ class AppProvider extends ChangeNotifier {
     _historySubscription =
         _firestoreService.deliveryHistoryStream(groupId).listen((deliveries) {
       _deliveryHistory = deliveries;
-      // Refresh dad profiles with updated deliveries
       if (_familyGroup != null) {
-        _loadFamilyDads(_familyGroup!);
+        _loadFamilyParents(_familyGroup!);
       }
       notifyListeners();
     });
@@ -238,10 +237,10 @@ class AppProvider extends ChangeNotifier {
     _userProfile = null;
     _familyGroup = null;
     _activeDelivery = null;
-    _currentDadLocation = null;
-    _dadIsClose = false;
+    _currentParentLocation = null;
+    _parentIsClose = false;
     _showCelebration = false;
-    _dads = [];
+    _parents = [];
     _deliveryHistory = [];
     _profileSubscription?.cancel();
     _familySubscription?.cancel();
@@ -249,6 +248,56 @@ class AppProvider extends ChangeNotifier {
     _historySubscription?.cancel();
   }
 
+  /// Register a parent (Dad/Mum) with full credentials and auto-create family group.
+  Future<void> signUpParent({
+    required String name,
+    required String email,
+    required String password,
+    required String phoneNumber,
+    required String familyName,
+  }) async {
+    final profile = await _authService.signUp(
+      email: email,
+      password: password,
+      name: name,
+      role: UserRole.dad,
+      phoneNumber: phoneNumber,
+    );
+    _userProfile = profile;
+    await _notificationService.initialize(profile.uid);
+
+    // Auto-create family group
+    final group = await _firestoreService.createFamilyGroup(
+      name: familyName,
+      creatorUid: profile.uid,
+    );
+    await _notificationService.subscribeToFamily(group.id);
+
+    notifyListeners();
+  }
+
+  /// Family member joins with just a name and invite code (anonymous auth).
+  Future<FamilyGroup?> joinFamilyAsGuest({
+    required String name,
+    required String inviteCode,
+  }) async {
+    final profile = await _authService.signUpAnonymous(name: name);
+    _userProfile = profile;
+    await _notificationService.initialize(profile.uid);
+
+    final group = await _firestoreService.joinFamilyByCode(
+      inviteCode: inviteCode,
+      uid: profile.uid,
+      role: UserRole.familyMember,
+    );
+    if (group != null) {
+      await _notificationService.subscribeToFamily(group.id);
+    }
+    notifyListeners();
+    return group;
+  }
+
+  /// Legacy sign-up (kept for backward compat).
   Future<void> signUp({
     required String name,
     required String email,
@@ -315,6 +364,22 @@ class AppProvider extends ChangeNotifier {
     return group;
   }
 
+  /// Get all family members (for manage members screen).
+  Future<List<UserProfile>> getFamilyMembers() async {
+    if (_familyGroup == null) return [];
+    return _firestoreService.getFamilyMembers(_familyGroup!.memberIds);
+  }
+
+  /// Remove a family member (parent only).
+  Future<void> removeFamilyMember(String memberUid) async {
+    if (_familyGroup == null) return;
+    if (_userProfile?.uid != _familyGroup!.createdBy) return;
+    await _firestoreService.removeFamilyMember(
+      groupId: _familyGroup!.id,
+      memberUid: memberUid,
+    );
+  }
+
   // ── Delivery & Takeaway Methods ──
 
   void setSelectedTakeaway(TakeawayType type) {
@@ -327,15 +392,15 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setCurrentDad(String dadId) {
-    _currentDadId = dadId;
+  void setCurrentParent(String parentId) {
+    _currentParentId = parentId;
     notifyListeners();
   }
 
   Future<void> startDelivery() async {
     final delivery = Delivery(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      dadName: _userProfile?.name ?? currentDad.name,
+      dadName: _userProfile?.name ?? currentParent.name,
       dadUid: _userProfile?.uid,
       familyGroupId: _familyGroup?.id,
       takeawayType: _selectedTakeaway,
@@ -347,55 +412,154 @@ class AppProvider extends ChangeNotifier {
     );
 
     _activeDelivery = delivery;
-    _dadIsClose = false;
+    _parentIsClose = false;
     _showCelebration = false;
     _notifiedClose = false;
 
-    // Save to Firestore if connected
     if (_familyGroup != null) {
       await _firestoreService.createDelivery(delivery);
 
-      // Send notification
       await _notificationService.notifyDeliveryStarted(
         familyGroupId: _familyGroup!.id,
-        dadName: delivery.dadName,
+        parentName: delivery.dadName,
         takeawayName: delivery.takeawayDisplayName,
       );
 
-      // Start real GPS tracking
       final hasPermission = await _gpsTrackingService.ensurePermissions();
       if (hasPermission) {
         await _gpsTrackingService.startTracking(
           deliveryId: delivery.id,
-          homeLatitude: 51.5150, // TODO: Use actual home coordinates
+          homeLatitude: 51.5150,
           homeLongitude: -0.1100,
           onUpdate: (position, eta) {
-            _currentDadLocation = LatLng(position.latitude, position.longitude);
-            if (eta != null && eta.inSeconds <= 120 && !_dadIsClose) {
-              _dadIsClose = true;
+            _currentParentLocation = LatLng(position.latitude, position.longitude);
+            if (eta != null && eta.inSeconds <= 120 && !_parentIsClose) {
+              _parentIsClose = true;
             }
             notifyListeners();
           },
         );
       } else {
-        // Fall back to mock GPS
         _startMockTracking();
       }
     } else {
-      // No family group - use mock GPS
       _startMockTracking();
     }
 
     notifyListeners();
   }
 
+  Future<void> startMultiDropDelivery(List<DeliveryStop> stops) async {
+    final stopsWithStatus = stops.isNotEmpty
+        ? [
+            stops.first.copyWith(status: StopStatus.delivering),
+            ...stops.skip(1),
+          ]
+        : stops;
+
+    final delivery = Delivery(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      dadName: _userProfile?.name ?? currentParent.name,
+      dadUid: _userProfile?.uid,
+      familyGroupId: _familyGroup?.id,
+      takeawayType: _selectedTakeaway,
+      customTakeawayName:
+          _selectedTakeaway == TakeawayType.custom ? _customTakeawayName : null,
+      startTime: DateTime.now(),
+      estimatedDuration: Duration(minutes: 10 * stops.length),
+      isActive: true,
+      stops: stopsWithStatus,
+      currentStopIndex: 0,
+    );
+
+    _activeDelivery = delivery;
+    _parentIsClose = false;
+    _showCelebration = false;
+    _notifiedClose = false;
+
+    if (_familyGroup != null) {
+      await _firestoreService.createDelivery(delivery);
+
+      final stopNames = stops.map((s) => s.name).join(', ');
+      await _notificationService.notifyDeliveryStarted(
+        familyGroupId: _familyGroup!.id,
+        parentName: delivery.dadName,
+        takeawayName:
+            '${delivery.takeawayDisplayName} (${stops.length} stops: $stopNames)',
+      );
+
+      final hasPermission = await _gpsTrackingService.ensurePermissions();
+      if (hasPermission) {
+        await _gpsTrackingService.startTracking(
+          deliveryId: delivery.id,
+          homeLatitude: 51.5150,
+          homeLongitude: -0.1100,
+          onUpdate: (position, eta) {
+            _currentParentLocation =
+                LatLng(position.latitude, position.longitude);
+            if (eta != null && eta.inSeconds <= 120 && !_parentIsClose) {
+              _parentIsClose = true;
+            }
+            notifyListeners();
+          },
+        );
+      } else {
+        _startMockTracking();
+      }
+    } else {
+      _startMockTracking();
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> markCurrentStopDelivered() async {
+    if (_activeDelivery == null || _activeDelivery!.stops.isEmpty) return;
+    final idx = _activeDelivery!.currentStopIndex;
+    if (idx >= _activeDelivery!.stops.length) return;
+
+    final updatedStops = List<DeliveryStop>.from(_activeDelivery!.stops);
+    updatedStops[idx] = updatedStops[idx].copyWith(
+      status: StopStatus.delivered,
+      deliveredAt: DateTime.now(),
+    );
+
+    final nextIdx = idx + 1;
+    final allDone = nextIdx >= updatedStops.length;
+
+    if (!allDone) {
+      updatedStops[nextIdx] = updatedStops[nextIdx].copyWith(
+        status: StopStatus.delivering,
+      );
+    }
+
+    _activeDelivery = _activeDelivery!.copyWith(
+      stops: updatedStops,
+      currentStopIndex: allDone ? idx : nextIdx,
+    );
+
+    if (_familyGroup != null) {
+      await _firestoreService.updateDeliveryStops(
+        deliveryId: _activeDelivery!.id,
+        stops: updatedStops,
+        currentStopIndex: allDone ? idx : nextIdx,
+      );
+    }
+
+    if (allDone) {
+      await _completeDelivery();
+    } else {
+      notifyListeners();
+    }
+  }
+
   void _startMockTracking() {
     _mockGpsService.startTracking((location) {
-      _currentDadLocation = location;
+      _currentParentLocation = location;
       final remaining = _mockGpsService.estimatedTimeRemaining;
 
-      if (remaining.inSeconds <= 120 && !_dadIsClose) {
-        _dadIsClose = true;
+      if (remaining.inSeconds <= 120 && !_parentIsClose) {
+        _parentIsClose = true;
       }
 
       if (_mockGpsService.hasArrived) {
@@ -415,7 +579,6 @@ class AppProvider extends ChangeNotifier {
     );
     _showCelebration = true;
 
-    // Update Firestore
     if (_familyGroup != null) {
       await _firestoreService.completeDelivery(_activeDelivery!.id);
     }
@@ -429,22 +592,19 @@ class AppProvider extends ChangeNotifier {
 
     final ratedDelivery = _activeDelivery!.copyWith(rating: rating);
 
-    // Save to Firestore
     if (_familyGroup != null) {
       await _firestoreService.rateDelivery(
         deliveryId: ratedDelivery.id,
         rating: rating,
       );
 
-      // Notify Dad
       if (ratedDelivery.dadUid != null) {
         await _notificationService.notifyRatingReceived(
-          dadUid: ratedDelivery.dadUid!,
+          parentUid: ratedDelivery.dadUid!,
           averageRating: rating.average,
         );
       }
 
-      // Check badges
       if (ratedDelivery.dadUid != null) {
         final allDeliveries = _deliveryHistory
             .where((d) => d.dadUid == ratedDelivery.dadUid)
@@ -462,7 +622,6 @@ class AppProvider extends ChangeNotifier {
           }
         }
 
-        // Update user stats
         final ratedList =
             allDeliveries.where((d) => d.rating != null).toList();
         final avgRating = ratedList.isEmpty
@@ -476,17 +635,16 @@ class AppProvider extends ChangeNotifier {
         );
       }
     } else {
-      // Offline mode - just add to local history
       _deliveryHistory.insert(0, ratedDelivery);
 
-      final dadIndex = _dads.indexWhere((d) => d.id == _currentDadId);
-      if (dadIndex != -1) {
-        final dad = _dads[dadIndex];
-        final updatedDeliveries = [...dad.deliveries, ratedDelivery];
-        final updatedBadges = _checkBadges(updatedDeliveries, dad.badges);
-        _dads[dadIndex] = Dad(
-          id: dad.id,
-          name: dad.name,
+      final parentIndex = _parents.indexWhere((d) => d.id == _currentParentId);
+      if (parentIndex != -1) {
+        final parent = _parents[parentIndex];
+        final updatedDeliveries = [...parent.deliveries, ratedDelivery];
+        final updatedBadges = _checkBadges(updatedDeliveries, parent.badges);
+        _parents[parentIndex] = ParentProfile(
+          id: parent.id,
+          name: parent.name,
           badges: updatedBadges,
           deliveries: updatedDeliveries,
         );
@@ -494,8 +652,8 @@ class AppProvider extends ChangeNotifier {
     }
 
     _activeDelivery = null;
-    _currentDadLocation = null;
-    _dadIsClose = false;
+    _currentParentLocation = null;
+    _parentIsClose = false;
     _showCelebration = false;
     _mockGpsService.stopTracking();
 
@@ -510,8 +668,8 @@ class AppProvider extends ChangeNotifier {
       }
     }
     _activeDelivery = null;
-    _currentDadLocation = null;
-    _dadIsClose = false;
+    _currentParentLocation = null;
+    _parentIsClose = false;
     _showCelebration = false;
     _mockGpsService.stopTracking();
     _gpsTrackingService.stopTracking();
@@ -523,8 +681,8 @@ class AppProvider extends ChangeNotifier {
       _firestoreService.completeDelivery(_activeDelivery!.id);
     }
     _activeDelivery = null;
-    _currentDadLocation = null;
-    _dadIsClose = false;
+    _currentParentLocation = null;
+    _parentIsClose = false;
     _showCelebration = false;
     _mockGpsService.stopTracking();
     _gpsTrackingService.stopTracking();
@@ -535,7 +693,7 @@ class AppProvider extends ChangeNotifier {
     if (_activeDelivery == null) return;
     _mockGpsService.stopTracking();
     _gpsTrackingService.stopTracking();
-    _dadIsClose = true;
+    _parentIsClose = true;
     _completeDelivery();
   }
 
@@ -557,10 +715,10 @@ class AppProvider extends ChangeNotifier {
       }
     }
 
-    if (!existingTypes.contains(BadgeType.fiveStarDad)) {
+    if (!existingTypes.contains(BadgeType.fiveStarParent)) {
       if (deliveries
           .any((d) => d.rating != null && d.rating!.average == 5.0)) {
-        badges.add(Badge(type: BadgeType.fiveStarDad, earnedAt: now));
+        badges.add(Badge(type: BadgeType.fiveStarParent, earnedAt: now));
       }
     }
 
@@ -576,13 +734,13 @@ class AppProvider extends ChangeNotifier {
       }
     }
 
-    if (!existingTypes.contains(BadgeType.varietyKing)) {
+    if (!existingTypes.contains(BadgeType.varietyRoyalty)) {
       final types = deliveries.map((d) => d.takeawayType).toSet();
       final mainTypes = TakeawayType.values
           .where((t) => t != TakeawayType.other && t != TakeawayType.custom)
           .toSet();
       if (types.containsAll(mainTypes)) {
-        badges.add(Badge(type: BadgeType.varietyKing, earnedAt: now));
+        badges.add(Badge(type: BadgeType.varietyRoyalty, earnedAt: now));
       }
     }
 
@@ -627,17 +785,17 @@ class AppProvider extends ChangeNotifier {
   void seedDemoData() {
     if (_deliveryHistory.isNotEmpty) return;
 
-    _dads = [
-      Dad(id: '1', name: 'Dad', badges: [], deliveries: []),
-      Dad(id: '2', name: 'Uncle Bob', badges: [], deliveries: []),
-      Dad(id: '3', name: 'Grandad', badges: [], deliveries: []),
+    _parents = [
+      ParentProfile(id: '1', name: appConfig.parentRole, badges: [], deliveries: []),
+      ParentProfile(id: '2', name: 'Uncle Bob', badges: [], deliveries: []),
+      ParentProfile(id: '3', name: 'Grandad', badges: [], deliveries: []),
     ];
-    _currentDadId = '1';
+    _currentParentId = '1';
 
     final demoDeliveries = [
       Delivery(
         id: 'demo1',
-        dadName: 'Dad',
+        dadName: appConfig.parentRole,
         takeawayType: TakeawayType.pizza,
         startTime: DateTime.now().subtract(const Duration(days: 7)),
         arrivalTime: DateTime.now()
@@ -649,7 +807,7 @@ class AppProvider extends ChangeNotifier {
       ),
       Delivery(
         id: 'demo2',
-        dadName: 'Dad',
+        dadName: appConfig.parentRole,
         takeawayType: TakeawayType.chinese,
         startTime: DateTime.now().subtract(const Duration(days: 5)),
         arrivalTime: DateTime.now()
@@ -673,7 +831,7 @@ class AppProvider extends ChangeNotifier {
       ),
       Delivery(
         id: 'demo4',
-        dadName: 'Dad',
+        dadName: appConfig.parentRole,
         takeawayType: TakeawayType.indian,
         startTime: DateTime.now().subtract(const Duration(days: 1)),
         arrivalTime: DateTime.now()
@@ -687,26 +845,26 @@ class AppProvider extends ChangeNotifier {
 
     _deliveryHistory.addAll(demoDeliveries);
 
-    final dadIndex = _dads.indexWhere((d) => d.id == '1');
-    if (dadIndex != -1) {
-      _dads[dadIndex] = Dad(
+    final parentIndex = _parents.indexWhere((d) => d.id == '1');
+    if (parentIndex != -1) {
+      _parents[parentIndex] = ParentProfile(
         id: '1',
-        name: 'Dad',
+        name: appConfig.parentRole,
         badges: [
           Badge(
               type: BadgeType.speedDemon,
               earnedAt: DateTime.now().subtract(const Duration(days: 5))),
           Badge(
-              type: BadgeType.fiveStarDad,
+              type: BadgeType.fiveStarParent,
               earnedAt: DateTime.now().subtract(const Duration(days: 7))),
         ],
-        deliveries: demoDeliveries.where((d) => d.dadName == 'Dad').toList(),
+        deliveries: demoDeliveries.where((d) => d.dadName == appConfig.parentRole).toList(),
       );
     }
 
-    final bobIndex = _dads.indexWhere((d) => d.id == '2');
+    final bobIndex = _parents.indexWhere((d) => d.id == '2');
     if (bobIndex != -1) {
-      _dads[bobIndex] = Dad(
+      _parents[bobIndex] = ParentProfile(
         id: '2',
         name: 'Uncle Bob',
         badges: [],

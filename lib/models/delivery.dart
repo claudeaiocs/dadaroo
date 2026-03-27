@@ -1,5 +1,6 @@
 import 'package:dadaroo/models/takeaway_type.dart';
 import 'package:dadaroo/models/rating.dart';
+import 'package:dadaroo/models/delivery_stop.dart';
 
 class GpsPoint {
   final double latitude;
@@ -42,6 +43,8 @@ class Delivery {
   final List<GpsPoint> gpsTrail;
   final double? currentLatitude;
   final double? currentLongitude;
+  final List<DeliveryStop> stops;
+  final int currentStopIndex;
 
   Delivery({
     required this.id,
@@ -58,7 +61,18 @@ class Delivery {
     this.gpsTrail = const [],
     this.currentLatitude,
     this.currentLongitude,
+    this.stops = const [],
+    this.currentStopIndex = 0,
   });
+
+  bool get isMultiDrop => stops.length > 1;
+  int get totalStops => stops.length;
+  int get completedStops => stops.where((s) => s.isDelivered).length;
+  double get stopsProgress =>
+      stops.isEmpty ? 0.0 : completedStops / totalStops;
+  DeliveryStop? get currentStop =>
+      currentStopIndex < stops.length ? stops[currentStopIndex] : null;
+  bool get allStopsDelivered => stops.isNotEmpty && completedStops == totalStops;
 
   String get takeawayDisplayName {
     if (takeawayType == TakeawayType.custom && customTakeawayName != null) {
@@ -90,6 +104,8 @@ class Delivery {
       'gpsTrail': gpsTrail.map((p) => p.toMap()).toList(),
       'currentLatitude': currentLatitude,
       'currentLongitude': currentLongitude,
+      'stops': stops.map((s) => s.toMap()).toList(),
+      'currentStopIndex': currentStopIndex,
     };
   }
 
@@ -122,6 +138,12 @@ class Delivery {
           : [],
       currentLatitude: (map['currentLatitude'] as num?)?.toDouble(),
       currentLongitude: (map['currentLongitude'] as num?)?.toDouble(),
+      stops: map['stops'] != null
+          ? (map['stops'] as List)
+              .map((s) => DeliveryStop.fromMap(s))
+              .toList()
+          : [],
+      currentStopIndex: map['currentStopIndex'] ?? 0,
     );
   }
 
@@ -140,6 +162,8 @@ class Delivery {
     List<GpsPoint>? gpsTrail,
     double? currentLatitude,
     double? currentLongitude,
+    List<DeliveryStop>? stops,
+    int? currentStopIndex,
   }) {
     return Delivery(
       id: id ?? this.id,
@@ -156,6 +180,8 @@ class Delivery {
       gpsTrail: gpsTrail ?? this.gpsTrail,
       currentLatitude: currentLatitude ?? this.currentLatitude,
       currentLongitude: currentLongitude ?? this.currentLongitude,
+      stops: stops ?? this.stops,
+      currentStopIndex: currentStopIndex ?? this.currentStopIndex,
     );
   }
 }

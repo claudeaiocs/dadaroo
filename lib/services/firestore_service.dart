@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dadaroo/models/delivery.dart';
+import 'package:dadaroo/models/delivery_stop.dart';
 import 'package:dadaroo/models/rating.dart';
 import 'package:dadaroo/models/badge.dart';
 import 'package:dadaroo/models/family_group.dart';
@@ -24,7 +25,7 @@ class FirestoreService {
       inviteCode: code,
       createdBy: creatorUid,
       memberIds: [creatorUid],
-      dadIds: [creatorUid],
+      parentIds: [creatorUid],
       createdAt: DateTime.now(),
     );
 
@@ -52,7 +53,6 @@ class FirestoreService {
     if (query.docs.isEmpty) return null;
 
     final doc = query.docs.first;
-    final group = FamilyGroup.fromMap(doc.data());
 
     // Add member
     final updates = <String, dynamic>{
@@ -68,7 +68,22 @@ class FirestoreService {
       'familyGroupId': doc.id,
     });
 
-    return FamilyGroup.fromMap({...doc.data(), ...updates});
+    return FamilyGroup.fromMap({...doc.data(), 'id': doc.id});
+  }
+
+  /// Remove a family member from the group.
+  Future<void> removeFamilyMember({
+    required String groupId,
+    required String memberUid,
+  }) async {
+    await _firestore.collection('familyGroups').doc(groupId).update({
+      'memberIds': FieldValue.arrayRemove([memberUid]),
+      'dadIds': FieldValue.arrayRemove([memberUid]),
+    });
+    // Clear user's familyGroupId
+    await _firestore.collection('users').doc(memberUid).update({
+      'familyGroupId': null,
+    });
   }
 
   Stream<FamilyGroup?> familyGroupStream(String groupId) {
@@ -144,6 +159,17 @@ class FirestoreService {
     await _firestore.collection('deliveries').doc(deliveryId).update({
       'isActive': false,
       'arrivalTime': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> updateDeliveryStops({
+    required String deliveryId,
+    required List<DeliveryStop> stops,
+    required int currentStopIndex,
+  }) async {
+    await _firestore.collection('deliveries').doc(deliveryId).update({
+      'stops': stops.map((s) => s.toMap()).toList(),
+      'currentStopIndex': currentStopIndex,
     });
   }
 

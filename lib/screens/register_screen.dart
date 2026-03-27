@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dadaroo/models/user_profile.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/providers/app_provider.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 
+/// Parent registration screen (Dad/Mum only). Family members use JoinFamilyScreen instead.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -16,7 +17,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  UserRole _selectedRole = UserRole.dad;
+  final _phoneController = TextEditingController();
+  final _familyNameController = TextEditingController();
   bool _loading = false;
   String? _error;
 
@@ -25,6 +27,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _phoneController.dispose();
+    _familyNameController.dispose();
     super.dispose();
   }
 
@@ -38,13 +42,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final provider = context.read<AppProvider>();
-      await provider.signUp(
+      await provider.signUpParent(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        role: _selectedRole,
+        phoneNumber: _phoneController.text.trim(),
+        familyName: _familyNameController.text.trim(),
       );
-      if (mounted) Navigator.pop(context);
+      // signUpParent auto-creates the family group, so AuthGate will
+      // route to the main app after the profile stream updates.
     } catch (e) {
       setState(() => _error = _friendlyError(e.toString()));
     } finally {
@@ -53,8 +59,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   String _friendlyError(String error) {
-    if (error.contains('email-already-in-use')) return 'This email is already registered';
-    if (error.contains('weak-password')) return 'Password must be at least 6 characters';
+    if (error.contains('email-already-in-use')) {
+      return 'This email is already registered';
+    }
+    if (error.contains('weak-password')) {
+      return 'Password must be at least 6 characters';
+    }
     if (error.contains('invalid-email')) return 'Invalid email address';
     return 'Sign up failed. Please try again.';
   }
@@ -71,24 +81,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Center(
-                  child: Text(
-                    'Join the Family!',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.darkBrown,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
                 Center(
-                  child: Text(
-                    'Set up your Dadaroo account',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppTheme.warmBrown.withValues(alpha: 0.8),
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        appConfig.parentEmoji,
+                        style: const TextStyle(fontSize: 48),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Register as ${appConfig.parentRole}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.darkBrown,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Set up your ${appConfig.appName} account',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppTheme.warmBrown.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -117,21 +134,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _nameController,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: 'Your Name',
-                    prefixIcon: const Icon(Icons.person_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryOrange,
-                        width: 2,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                  decoration: _inputDecoration(
+                    label: 'Your Name',
+                    icon: Icons.person_outlined,
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Enter your name';
@@ -145,21 +150,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryOrange,
-                        width: 2,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                  decoration: _inputDecoration(
+                    label: 'Email',
+                    icon: Icons.email_outlined,
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Enter your email';
@@ -169,27 +162,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // Phone
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  decoration: _inputDecoration(
+                    label: 'Phone Number',
+                    icon: Icons.phone_outlined,
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Enter your phone number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
                 // Password
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    hintText: 'At least 6 characters',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryOrange,
-                        width: 2,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                  textInputAction: TextInputAction.next,
+                  decoration: _inputDecoration(
+                    label: 'Password',
+                    icon: Icons.lock_outlined,
+                    hint: 'At least 6 characters',
                   ),
                   validator: (v) {
                     if (v == null || v.length < 6) {
@@ -198,41 +197,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
-                // Role selection
-                const Text(
-                  'I am a...',
+                // Family name
+                Divider(color: AppTheme.warmBrown.withValues(alpha: 0.3)),
+                const SizedBox(height: 16),
+                Text(
+                  'Your Family Group',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.darkBrown,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  "You'll get a code to share with your family",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.warmBrown.withValues(alpha: 0.8),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _RoleCard(
-                        emoji: '👨',
-                        title: 'Dad',
-                        subtitle: 'I get the food!',
-                        selected: _selectedRole == UserRole.dad,
-                        onTap: () => setState(() => _selectedRole = UserRole.dad),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _RoleCard(
-                        emoji: '👨‍👩‍👧‍👦',
-                        title: 'Family',
-                        subtitle: 'I track & rate!',
-                        selected: _selectedRole == UserRole.familyMember,
-                        onTap: () =>
-                            setState(() => _selectedRole = UserRole.familyMember),
-                      ),
-                    ),
-                  ],
+
+                TextFormField(
+                  controller: _familyNameController,
+                  textInputAction: TextInputAction.done,
+                  textCapitalization: TextCapitalization.words,
+                  onFieldSubmitted: (_) => _signUp(),
+                  decoration: _inputDecoration(
+                    label: 'Family Name',
+                    icon: Icons.home_outlined,
+                    hint: 'e.g. The Smiths',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Enter a family name';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 32),
 
@@ -260,61 +263,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-}
 
-class _RoleCard extends StatelessWidget {
-  final String emoji;
-  final String title;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _RoleCard({
-    required this.emoji,
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: selected ? AppTheme.primaryOrange.withValues(alpha: 0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? AppTheme.primaryOrange : Colors.grey.shade300,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 40)),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: selected ? AppTheme.primaryOrange : AppTheme.darkBrown,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppTheme.warmBrown.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
+  InputDecoration _inputDecoration({
+    required String label,
+    required IconData icon,
+    String? hint,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: AppTheme.primaryOrange,
+          width: 2,
         ),
       ),
+      filled: true,
+      fillColor: Colors.white,
     );
   }
 }

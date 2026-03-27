@@ -1,13 +1,13 @@
 import 'package:dadaroo/models/badge.dart';
 import 'package:dadaroo/models/delivery.dart';
 
-class Dad {
+class ParentProfile {
   final String id;
   final String name;
   final List<Badge> badges;
   final List<Delivery> deliveries;
 
-  Dad({
+  ParentProfile({
     required this.id,
     required this.name,
     this.badges = const [],

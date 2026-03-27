@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:dadaroo/config/app_config.dart';
 
 class AppTheme {
-  static const Color primaryOrange = Color(0xFFE8751A);
-  static const Color darkBrown = Color(0xFF4A2C0A);
-  static const Color warmBrown = Color(0xFF8B5E3C);
-  static const Color lightOrange = Color(0xFFFFF3E0);
-  static const Color cream = Color(0xFFFFF8F0);
-  static const Color accentYellow = Color(0xFFFFB74D);
+  static Color get primaryOrange => appConfig.primaryColor;
+  static Color get darkBrown => appConfig.darkAccent;
+  static Color get warmBrown => appConfig.warmAccent;
+  static Color get lightOrange => appConfig.lightAccent;
+  static Color get cream => appConfig.cream;
+  static Color get accentYellow => appConfig.accentHighlight;
   static const Color successGreen = Color(0xFF66BB6A);
   static const Color starGold = Color(0xFFFFD700);
 

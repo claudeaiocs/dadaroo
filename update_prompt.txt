@@ -1,0 +1,39 @@
+Update the Dadaroo Flutter app with these changes. This is a REAL app now, not a demo.
+
+1. CONFIGURABLE PARENT ROLE (Mumaroo future-proofing):
+   - Extract all "Dad" references into a config/branding system
+   - Create lib/config/app_config.dart with: appName, parentRole ("Dad"/"Mum"), parentEmoji, theme colours
+   - The same codebase should power both "Dadaroo" and "Mumaroo" just by changing config
+   - UI strings should use config values not hardcoded "Dad"
+
+2. REGISTRATION FLOW:
+   - Dad/Mum (parent) registers properly: email, password, name, phone number
+   - Family members join SIMPLY: just enter 6-digit family code OR scan QR code, then enter their name. Thats it. No email/password needed for family members.
+   - Family members get a device-based token (anonymous Firebase auth) so they stay logged in
+   - Parent can see all family members and remove them if needed
+
+3. MULTI-DROP DELIVERIES:
+   - When Dad hits "I got the food!" he can set up multiple stops
+   - Add stops screen: each stop has an address/name (e.g. "Sophie's flat", "Home")  
+   - Dad can save favourite stops so he doesnt re-enter them each time
+   - Each stop can have items assigned (e.g. "Sophie: 1x Sweet and Sour, 1x Egg Fried Rice")
+   - Order of stops is draggable to reorder
+   - Family members at each stop only see THEIR delivery status and ETA
+   - Dad marks each stop as "Delivered" when he drops off
+   - Track progress: "Stop 1 of 3 - Heading to Sophie's"
+
+4. DELIVERY ITEMS:
+   - When selecting takeaway, Dad can add individual items
+   - Assign items to stops/family members
+   - Family can see what theyre getting
+
+5. UPDATE RATE YOUR DAD:
+   - Each stop/recipient can rate separately
+   - Overall delivery rating combines all stops
+   - New badge: "Multi-drop Master" for completing 3+ stop deliveries
+
+6. Keep all existing features working (GPS, notifications, badges, history, dad jokes).
+
+Remember: flutter SDK is at C:\flutter\bin so if you need to run flutter commands use that path.
+
+When completely finished, run: openclaw system event --text "Done: Dadaroo updated with multi-drop, config system, and simple family joining" --mode now

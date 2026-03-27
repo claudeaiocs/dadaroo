@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/models/user_profile.dart';
 import 'package:dadaroo/providers/app_provider.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 
+/// Family setup screen - shown after registration if the user doesn't have a family group yet.
+/// For parents: create a family group.
+/// For family members: this shouldn't normally be reached (they join via JoinFamilyScreen),
+/// but if it is, show a code entry option.
 class FamilySetupScreen extends StatefulWidget {
   const FamilySetupScreen({super.key});
 
@@ -34,14 +38,14 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 shape: BoxShape.circle,
               ),
               child: Text(
-                isDad ? '👨' : '👨‍👩‍👧‍👦',
+                isDad ? appConfig.parentEmoji : appConfig.familyMemberEmoji,
                 style: const TextStyle(fontSize: 60),
               ),
             ),
             const SizedBox(height: 20),
             Text(
               isDad ? 'Create Your Family Group' : 'Join a Family',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.darkBrown,
@@ -51,7 +55,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
             Text(
               isDad
                   ? 'Set up your family and share the invite code'
-                  : 'Enter the code Dad gave you',
+                  : 'Enter the code ${appConfig.parentRole} gave you',
               style: TextStyle(
                 fontSize: 16,
                 color: AppTheme.warmBrown.withValues(alpha: 0.8),
@@ -143,7 +147,7 @@ class _CreateFamilySectionState extends State<_CreateFamilySection> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
+              borderSide: BorderSide(
                 color: AppTheme.primaryOrange,
                 width: 2,
               ),
@@ -182,13 +186,13 @@ class _ShareCodeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Icon(
+        Icon(
           Icons.check_circle,
           color: AppTheme.successGreen,
           size: 60,
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Family Created!',
           style: TextStyle(
             fontSize: 24,
@@ -197,7 +201,7 @@ class _ShareCodeView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Share this code with your family:',
           style: TextStyle(
             fontSize: 16,
@@ -206,7 +210,6 @@ class _ShareCodeView extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        // Code display
         GestureDetector(
           onTap: () {
             Clipboard.setData(ClipboardData(text: code));
@@ -226,7 +229,7 @@ class _ShareCodeView extends StatelessWidget {
               children: [
                 Text(
                   code,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 8,
@@ -234,15 +237,14 @@ class _ShareCodeView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.copy, color: AppTheme.primaryOrange),
+                Icon(Icons.copy, color: AppTheme.primaryOrange),
               ],
             ),
           ),
         ),
         const SizedBox(height: 24),
 
-        // QR Code
-        const Text(
+        Text(
           'Or scan this QR code:',
           style: TextStyle(color: AppTheme.warmBrown),
         ),
@@ -260,7 +262,7 @@ class _ShareCodeView extends StatelessWidget {
             ],
           ),
           child: QrImageView(
-            data: 'dadaroo://join/$code',
+            data: '${appConfig.deepLinkScheme}://join/$code',
             version: QrVersions.auto,
             size: 200,
             eyeStyle: QrEyeStyle(
@@ -295,7 +297,6 @@ class _JoinFamilySectionState extends State<_JoinFamilySection> {
   final _codeController = TextEditingController();
   bool _loading = false;
   String? _error;
-  bool _showScanner = false;
 
   @override
   void dispose() {
@@ -309,7 +310,6 @@ class _JoinFamilySectionState extends State<_JoinFamilySection> {
     setState(() {
       _loading = true;
       _error = null;
-      _showScanner = false;
     });
 
     try {
@@ -317,8 +317,6 @@ class _JoinFamilySectionState extends State<_JoinFamilySection> {
       final group = await provider.joinFamilyByCode(code.trim().toUpperCase());
       if (group == null) {
         setState(() => _error = 'No family found with this code');
-      } else {
-        if (mounted) Navigator.pop(context);
       }
     } catch (e) {
       setState(() => _error = 'Failed to join family');
@@ -329,10 +327,6 @@ class _JoinFamilySectionState extends State<_JoinFamilySection> {
 
   @override
   Widget build(BuildContext context) {
-    if (_showScanner) {
-      return _buildScanner();
-    }
-
     return Column(
       children: [
         if (_error != null) ...[
@@ -355,10 +349,11 @@ class _JoinFamilySectionState extends State<_JoinFamilySection> {
           controller: _codeController,
           textCapitalization: TextCapitalization.characters,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             letterSpacing: 6,
+            color: AppTheme.darkBrown,
           ),
           maxLength: 6,
           decoration: InputDecoration(
@@ -371,7 +366,7 @@ class _JoinFamilySectionState extends State<_JoinFamilySection> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
+              borderSide: BorderSide(
                 color: AppTheme.primaryOrange,
                 width: 2,
               ),
@@ -398,74 +393,6 @@ class _JoinFamilySectionState extends State<_JoinFamilySection> {
                   )
                 : const Text('Join Family'),
           ),
-        ),
-        const SizedBox(height: 20),
-        const Row(
-          children: [
-            Expanded(child: Divider()),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('OR', style: TextStyle(color: AppTheme.warmBrown)),
-            ),
-            Expanded(child: Divider()),
-          ],
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => setState(() => _showScanner = true),
-            icon: const Icon(Icons.qr_code_scanner),
-            label: const Text('Scan QR Code'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.primaryOrange,
-              side: const BorderSide(color: AppTheme.primaryOrange),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScanner() {
-    return Column(
-      children: [
-        const Text(
-          'Scan the QR code',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.darkBrown,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: SizedBox(
-            height: 300,
-            child: MobileScanner(
-              onDetect: (capture) {
-                final barcodes = capture.barcodes;
-                for (final barcode in barcodes) {
-                  final value = barcode.rawValue;
-                  if (value != null && value.startsWith('dadaroo://join/')) {
-                    final code = value.replaceFirst('dadaroo://join/', '');
-                    _joinFamily(code);
-                    return;
-                  }
-                }
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextButton(
-          onPressed: () => setState(() => _showScanner = false),
-          child: const Text('Enter code manually'),
         ),
       ],
     );

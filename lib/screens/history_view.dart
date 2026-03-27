@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:dadaroo/config/app_config.dart';
 import 'package:dadaroo/providers/app_provider.dart';
 import 'package:dadaroo/theme/app_theme.dart';
 import 'package:dadaroo/widgets/star_rating_widget.dart';
@@ -20,16 +21,14 @@ class HistoryView extends StatelessWidget {
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  // Stats header
                   _buildStatsHeader(provider),
                   const SizedBox(height: 8),
-                  // Delivery list
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Row(
                       children: [
                         Icon(Icons.history, color: AppTheme.primaryOrange, size: 20),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Recent Deliveries',
                           style: TextStyle(
@@ -50,7 +49,6 @@ class HistoryView extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              // Takeaway emoji
                               Container(
                                 width: 50,
                                 height: 50,
@@ -66,14 +64,13 @@ class HistoryView extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              // Details
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       delivery.takeawayDisplayName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: AppTheme.darkBrown,
@@ -98,7 +95,6 @@ class HistoryView extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              // Rating
                               if (delivery.rating != null)
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -110,7 +106,7 @@ class HistoryView extends StatelessWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       delivery.rating!.average.toStringAsFixed(1),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                         color: AppTheme.primaryOrange,
@@ -144,8 +140,8 @@ class HistoryView extends StatelessWidget {
       color: AppTheme.primaryOrange.withValues(alpha: 0.08),
       child: Column(
         children: [
-          const Text(
-            '📊 Dad Stats',
+          Text(
+            '📊 ${appConfig.statsLabel}',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -181,9 +177,8 @@ class HistoryView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Takeaway breakdown
           if (provider.takeawayStats.isNotEmpty) ...[
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Takeaway Breakdown',
@@ -210,7 +205,7 @@ class HistoryView extends StatelessWidget {
                       width: 80,
                       child: Text(
                         entry.key.displayName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           color: AppTheme.darkBrown,
                         ),
@@ -222,7 +217,7 @@ class HistoryView extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: entry.value / maxCount,
                           backgroundColor: AppTheme.lightOrange,
-                          valueColor: const AlwaysStoppedAnimation(
+                          valueColor: AlwaysStoppedAnimation(
                             AppTheme.primaryOrange,
                           ),
                           minHeight: 8,
@@ -232,7 +227,7 @@ class HistoryView extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '${entry.value}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryOrange,
                       ),
@@ -254,7 +249,7 @@ class HistoryView extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppTheme.primaryOrange,
@@ -280,7 +275,7 @@ class HistoryView extends StatelessWidget {
           children: [
             const Text('📋', style: TextStyle(fontSize: 64)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No deliveries yet!',
               style: TextStyle(
                 fontSize: 24,
@@ -290,7 +285,7 @@ class HistoryView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "Start a food run to see your history here",
+              'Start a food run to see your history here',
               style: TextStyle(
                 fontSize: 16,
                 color: AppTheme.warmBrown.withValues(alpha: 0.8),

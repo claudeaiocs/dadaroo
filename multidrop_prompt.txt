@@ -1,0 +1,45 @@
+Add multi-drop delivery support to this Flutter app. The app already has config system, Firebase, auth, family linking etc. Just add multi-drop:
+
+1. Create lib/models/delivery_stop.dart:
+   - Stop model: id, address/name, items list, order index, status (pending/delivering/delivered), recipientName, deliveredAt
+
+2. Update lib/models/delivery.dart:
+   - Add List of DeliveryStop stops
+   - Add currentStopIndex
+   - Track overall progress
+
+3. Create lib/screens/delivery_setup_screen.dart:
+   - After hitting "I got the food!" Dad sees this screen
+   - Add stops with name/address (e.g. "Sophie's flat", "Home")
+   - Drag to reorder stops
+   - Add items per stop (text field, add button, list)
+   - Save favourite stops for reuse
+   - "Start delivery" button
+
+4. Create lib/screens/active_delivery_screen.dart:
+   - Shows current stop: "Stop 1 of 3 - Heading to Sophie's"
+   - Items for this stop listed
+   - "Mark Delivered" button for current stop
+   - Auto advances to next stop
+   - Shows mini progress bar of all stops
+   - When all stops done, delivery complete
+
+5. Update lib/screens/dad_view.dart:
+   - After selecting takeaway type, go to delivery_setup_screen
+   - Show active multi-drop delivery if one is in progress
+
+6. Update lib/screens/family_view.dart:
+   - Family members see only their stop's ETA and status
+   - "Dad is 2 stops away" or "Dad is heading to you next!"
+
+7. Update lib/screens/rate_dad_view.dart:
+   - Rate per-stop delivery
+   - Add "Multi-drop Master" badge for 3+ stop deliveries
+
+8. Update lib/services/firestore_service.dart:
+   - Save/load delivery stops
+   - Save favourite stops per user
+
+Keep the warm orange/brown Dadaroo theme. Use the existing AppConfig for parent role references.
+
+When completely finished, run: openclaw system event --text "Done: Multi-drop deliveries added to Dadaroo" --mode now
