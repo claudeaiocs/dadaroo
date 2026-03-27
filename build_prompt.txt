@@ -1,0 +1,15 @@
+Build out the Dadaroo Flutter app. The project is already created in this directory. Build ALL screens and features:
+
+1. DAD VIEW (main screen): Big "I have got the food!" button that announces to family. Dropdown for takeaway type (Chinese, Indian, Pizza, Fish and Chips, Kebab, Thai, Burger, Sushi, Other) plus custom option. GPS tracking starts on button press. ETA display.
+
+2. FAMILY VIEW: Dad live location on a map heading home. What takeaway he is bringing. ETA countdown. Fun animations when Dad is close (under 2 mins).
+
+3. RATE YOUR DAD: After delivery, family rates Dad. Star rating 1-5. Categories: Speed, Food Choice, Communication, Overall Dadness. Badges and achievements (Speed Demon, Master Chef Picker, 100 Deliveries). Leaderboard for multiple dads.
+
+4. HISTORY: Log of all pickups. Stats: favourite takeaway, average delivery time, best rating.
+
+5. DESIGN: Fun warm family-friendly UI. Dad-joke loading screens. Colour scheme: warm oranges and browns (takeaway vibes). Material 3 design.
+
+Use provider for state management. Mock the GPS and Firebase so all screens are fully navigable and look great. Create all dart files in lib/ with proper routing between screens.
+
+When completely finished, run this command: openclaw system event --text "Done: Dadaroo Flutter app built with all screens" --mode now
